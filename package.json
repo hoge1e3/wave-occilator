@@ -1,0 +1,8 @@
+{
+  "scripts": {
+    "test": "npx http-server -o js/test/index.html"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3"
+  }
+}
