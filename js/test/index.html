@@ -1,7 +1,11 @@
 <button id="test">Test</button>
+<button id="stop">Stop</button>
 <script type="module">
-    import {playSound } from './test.js';
+    import {playSound ,stop} from './test.js';
     document.getElementById('test').addEventListener('click', () => {
         playSound();
+    });
+    document.getElementById('stop').addEventListener('click', () => {
+        stop();
     });
 </script>
