@@ -28,7 +28,7 @@ export class Parser {
     constructor(public literals: LieteralSet) {
 
     }
-    parse(mml:string):Melody {
+    parse(mml:string)/*:Melody*/ {
         
     }
 }
