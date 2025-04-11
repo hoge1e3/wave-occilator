@@ -1,4 +1,5 @@
 {
+  "name":"@hoge1e3/oscillator",
   "scripts": {
     "test": "npx http-server -o js/test/index.html"
   },
