@@ -6,6 +6,17 @@ type ADSR = {
 };
 type Waveform = 'sine' | 'square' | 'sawtooth' | 'triangle';
 const audioCtx = new AudioContext();
+export function gainNodeOfEnvelope(time:number, duration:number, vol:number, envelope: ADSR) {
+    const gainNode = audioCtx.createGain();
+    const attackEnd = time + envelope.attack;
+    const decayEnd = attackEnd + envelope.decay;
+    gainNode.gain.setValueAtTime(0, time); // Start at 0 volume
+    gainNode.gain.linearRampToValueAtTime(vol, attackEnd); // Attack phase
+    gainNode.gain.linearRampToValueAtTime(vol * envelope.sustain, decayEnd); // Decay phase
+    gainNode.gain.setValueAtTime(vol * envelope.sustain, decayEnd); // Sustain phase
+    gainNode.gain.linearRampToValueAtTime(0, time + duration); // Release phase
+    return gainNode;
+}
 export function createNode(time:number, duration:number, freq:number, vol:number, waveform:Waveform,  envelope:ADSR) {
     const oscillator = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
