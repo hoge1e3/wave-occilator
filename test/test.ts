@@ -6,8 +6,8 @@ let playback:Playback|undefined;
 const wdat=[] as number[];/*0,1,2,3,4,5,6,7, -7,-6,-5,-4,-3,-2,-1,0, 
             3,5,6,7,6,5,3,0, -3,-5,-6,-7,-6,-5,-3,0].map(s=>s/8);*/
 const s=(x:number)=>Math.sin(x*(Math.PI*2));
-for (let i=0;i<1024*14;i++) {
-    wdat.push(s(i/1024+1*s(i*Math.sqrt(2)/1024)) );
+for (let i=0;i<1024*1;i++) {
+    wdat.push(s(i/1024+1*s(i*3/1024)) );
 }
 const scc=bufferedWaveform(audioCtx, wdat, {lambda: 1024});
 console.log(wdat, scc);

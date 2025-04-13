@@ -1,6 +1,7 @@
 {
   "name":"@hoge1e3/oscillator",
   "scripts": {
+    "build": "npx tsc",
     "test": "npx http-server -o js/test/index.html"
   },
   "devDependencies": {
