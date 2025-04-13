@@ -4,7 +4,8 @@ type ADSR = {
     sustain: number; // volume level during sustain (0 to 1)
     release: number; // time in seconds to fade out
 };
-type Waveform = 'sine' | 'square' | 'sawtooth' | 'triangle';
+type OscillatorWaveType = 'sine' | 'square' | 'sawtooth' | 'triangle';
+type Waveform=OscillatorWaveType|BufferedWaveform;
 export interface Source {
     duration: number;
     play(ctx:AudioContext, start?:number, dest?: AudioDestinationNode ):Playback;
@@ -51,6 +52,13 @@ export interface Playback {
     //join(src:Source):Playback;
 }
 export function createNote(duration:number, freq:number, vol:number, waveform:Waveform,  envelope:ADSR):Source {
+    if (typeof waveform==="string") {
+        return createOscillatorNote(duration, freq, vol, waveform, envelope);
+    } else {
+        return createBufferedWaveformNote(duration, freq, vol, waveform, envelope);
+    }
+}
+export function createOscillatorNote(duration:number, freq:number, vol:number, waveform:OscillatorWaveType,  envelope:ADSR):Source {
     return {
         duration,
         play(ctx:AudioContext, start:number=ctx.currentTime, dest=ctx.destination ) {
@@ -59,46 +67,32 @@ export function createNote(duration:number, freq:number, vol:number, waveform:Wa
         
             oscillator.type = waveform; // type of wave
             oscillator.frequency.setValueAtTime(freq, start); // frequency in hertz
-        
-            // Apply ADSR envelope to the gain node
-            /*const attackEnd = start + envelope.attack;
-            const decayEnd = attackEnd + envelope.decay;
-            gainNode.gain.setValueAtTime(0, start); // Start at 0 volume
-            gainNode.gain.linearRampToValueAtTime(vol, attackEnd); // Attack phase
-            gainNode.gain.linearRampToValueAtTime(vol * envelope.sustain, decayEnd); // Decay phase
-            gainNode.gain.setValueAtTime(vol * envelope.sustain, decayEnd); // Sustain phase
-            gainNode.gain.linearRampToValueAtTime(0, start + duration); // Release phase*/
-        
+                
             oscillator.connect(gainNode);
             gainNode.connect(dest);
             const end=start + duration
             oscillator.start(start);
             oscillator.stop(end);
-            //const endp=Promise.resolve(end);
             return {
                 gainNode, oscillator,
                 ctx ,dest, start, end,
                 stop() {
-                    //console.log("Discon");
                     gainNode.disconnect()
                 },
-                /*join(src:Source):Playback {
-                    return src.play(ctx,end,dest);
-                }*/
             }
         }
     };
 }
 
 
-type WaveBufferNode={
+type BufferedWaveform={
     buf: AudioBuffer,
     baseFreq: number,
 };
 type FreqParam=FromRecorded|FromGenerated;
 type FromRecorded={ sampleRate: number, baseFreq: number};
 type FromGenerated={ lambda: number };
-export function waveBufferNode(ctx:AudioContext, array:number[], freqParam:FreqParam={lambda:array.length}):WaveBufferNode {
+export function bufferedWaveform(ctx:AudioContext, array:number[], freqParam:FreqParam={lambda:array.length}):BufferedWaveform {
     // From sampled(Recorded) data
     //  given: sampleRate, baseFreq 
     //  calculate: lambda = sampleRate / baseFreq
@@ -124,10 +118,10 @@ export function waveBufferNode(ctx:AudioContext, array:number[], freqParam:FreqP
         buf, baseFreq, 
     };
 }
-export function playbackRateOf(waveform:WaveBufferNode, freq: number) {
+export function playbackRateOf(waveform:BufferedWaveform, freq: number) {
     return freq/waveform.baseFreq;
 }
-export function createWaveNote(duration:number, freq:number, vol:number, waveform:WaveBufferNode,  envelope:ADSR) {
+export function createBufferedWaveformNote(duration:number, freq:number, vol:number, waveform:BufferedWaveform,  envelope:ADSR) {
     return {
         duration,
         play(ctx:AudioContext, start:number=ctx.currentTime, dest=ctx.destination ) {
