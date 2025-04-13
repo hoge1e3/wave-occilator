@@ -1,5 +1,6 @@
 {
   "name":"@hoge1e3/oscillator",
+  "description": "oscillator using WebAudio, with wave sampling",
   "scripts": {
     "build": "npx tsc",
     "test": "npx http-server -o js/test/index.html"
