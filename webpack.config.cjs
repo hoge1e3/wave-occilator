@@ -8,7 +8,7 @@ const outputs={
     filename: "index.js",
   },
   umd: {
-    library: "pNode",
+    library: "wave-oscillator",
     libraryTarget: 'umd',
     path: `${__dirname}/dist`,
     filename: "index.umd.js",

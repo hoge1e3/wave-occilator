@@ -1,7 +1,26 @@
 {
-  "name":"@hoge1e3/oscillator",
+  "name": "@hoge1e3/oscillator",
+  "version": "1.0.0",
   "description": "oscillator using WebAudio, with wave sampling",
+  "homepage": "https://github.com/hoge1e3/wave-occilator#readme",
+  "bugs": {
+    "url": "https://github.com/hoge1e3/wave-occilator/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hoge1e3/wave-occilator.git"
+  },
+  "license": "ISC",
+  "author": "",
+  "declaration": true,
+  "type": "module",
+  "types": "js/src/index.d.ts",
+  "main": "js/src/index.js",
+  "directories": {
+    "test": "test"
+  },
   "scripts": {
+    "tsc": "npx tsc",
     "build": "npx tsc",
     "test": "npx http-server -o js/test/index.html"
   },

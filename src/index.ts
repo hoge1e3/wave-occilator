@@ -51,6 +51,17 @@ export interface Playback {
     end:number; // end time may be decided later.
     //join(src:Source):Playback;
 }
+export function createMuteNote(duration: number):Source {
+    return {
+        duration,
+        play(ctx, start=ctx.currentTime , dest=ctx.destination) {
+            return {
+                ctx, dest, start, end: start+duration,
+                stop(){}, 
+            };
+        }
+    }
+}
 export function createNote(duration:number, freq:number, vol:number, waveform:Waveform,  envelope:ADSR):Source {
     if (typeof waveform==="string") {
         return createOscillatorNote(duration, freq, vol, waveform, envelope);
