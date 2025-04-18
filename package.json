@@ -1,6 +1,6 @@
 {
   "name": "@hoge1e3/oscillator",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "oscillator using WebAudio, with wave sampling",
   "homepage": "https://github.com/hoge1e3/wave-occilator#readme",
   "bugs": {
