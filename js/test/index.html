@@ -1,11 +1,18 @@
 <button id="test">Test</button>
 <button id="stop">Stop</button>
+<input type="file" id="file" accept=".wav" />
 <script type="module">
-    import {playSound ,stop} from './test.js';
+    import {playSound ,stop, readAudioFile} from './test.js';
     document.getElementById('test').addEventListener('click', () => {
         playSound();
     });
     document.getElementById('stop').addEventListener('click', () => {
         stop();
+    });
+    document.getElementById('file').addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (file) {
+            readAudioFile(file);
+        }
     });
 </script>

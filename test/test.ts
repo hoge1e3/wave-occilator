@@ -1,4 +1,4 @@
-import {createNote, bufferedWaveform, joinSource, Playback, Source} from '../src/index.js';
+import {createNote, bufferedWaveform, bufferedWaveformOfFile, joinSource, Playback, Source} from '../src/index.js';
 
 
 const audioCtx = new AudioContext();
@@ -9,15 +9,19 @@ const s=(x:number)=>Math.sin(x*(Math.PI*2));
 for (let i=0;i<1024*1;i++) {
     wdat.push(s(i/1024+1*s(i*3/1024)) );
 }
-const scc=bufferedWaveform(audioCtx, wdat, {lambda: 1024});
-console.log(wdat, scc);
+export async function readAudioFile(file:File) {
+    const arrayBuffer = await file.arrayBuffer();
+    wave=await bufferedWaveformOfFile(audioCtx, arrayBuffer);
+}
+let wave=bufferedWaveform(audioCtx, wdat, {lambda: 1024});
+console.log(wdat, wave);
 export async function stop() {
     playback?.stop();
 }
 export async function playSound() {
     const sources= [] as Source[];
     for (let i = 0; i < 12; i++) {
-        const src=createNote(1, 440*Math.pow(2,i/12), 0.5, scc, {
+        const src=createNote(1, 440*Math.pow(2,i/12), 0.5, wave, {
             attack: 0, // time in seconds to reach max volume
             decay: 0.1, // time in seconds to reach sustain level
             sustain: 0.5, // volume level during sustain (0 to 1)

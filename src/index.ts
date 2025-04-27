@@ -129,6 +129,10 @@ export function bufferedWaveform(ctx:AudioContext, array:number[], freqParam:Fre
         buf, baseFreq, 
     };
 }
+export async function bufferedWaveformOfFile(ctx:AudioContext, arrayBuffer:ArrayBuffer, baseFreq=440):Promise<BufferedWaveform> {
+    const { sampleRate, data } = await parseAudioFile(ctx, arrayBuffer);
+    return bufferedWaveform(ctx, Array.from(data), { baseFreq, sampleRate });
+}
 export function playbackRateOf(waveform:BufferedWaveform, freq: number) {
     return freq/waveform.baseFreq;
 }
@@ -157,3 +161,31 @@ export function createBufferedWaveformNote(duration:number, freq:number, vol:num
         }
     };
 }
+async function parseAudioFile(audioContext: AudioContext, arrayBuffer:ArrayBuffer):Promise<{ sampleRate: number, data: Float32Array }> {
+  
+    // ArrayBufferをAudioBufferにデコード
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+  
+    const { sampleRate, numberOfChannels, length } = audioBuffer;
+  
+    // モノラルに変換
+    let monoData = new Float32Array(length);
+  
+    for (let ch = 0; ch < numberOfChannels; ch++) {
+      const channelData = audioBuffer.getChannelData(ch);
+      for (let i = 0; i < length; i++) {
+        monoData[i] += channelData[i];
+      }
+    }
+  
+    // チャンネル数で割って平均化（ステレオをモノラルに）
+    for (let i = 0; i < length; i++) {
+      monoData[i] /= numberOfChannels;
+    }
+  
+    return {
+      sampleRate,
+      data: monoData, // -1〜1のFloat32Array
+    };
+  }
+  
