@@ -1,11 +1,11 @@
-type ADSR = {
+export type ADSR = {
     attack: number; // time in seconds to reach max volume
     decay: number; // time in seconds to reach sustain level
     sustain: number; // volume level during sustain (0 to 1)
     release: number; // time in seconds to fade out
 };
-type OscillatorWaveType = 'sine' | 'square' | 'sawtooth' | 'triangle';
-type Waveform=OscillatorWaveType|BufferedWaveform;
+export type OscillatorWaveType = 'sine' | 'square' | 'sawtooth' | 'triangle';
+export type Waveform=OscillatorWaveType|BufferedWaveform;
 export interface Source {
     duration: number;
     play(ctx:AudioContext, start?:number, dest?: AudioDestinationNode ):Playback;
@@ -96,7 +96,7 @@ export function createOscillatorNote(duration:number, freq:number, vol:number, w
 }
 
 
-type BufferedWaveform={
+export type BufferedWaveform={
     buf: AudioBuffer,
     baseFreq: number,
 };
