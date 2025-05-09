@@ -1,11 +1,11 @@
 
-const IgnoreDynamicRequire = require('webpack-ignore-dynamic-require');
+//const IgnoreDynamicRequire = require('webpack-ignore-dynamic-require');
 const type="esm";
 const outputs={
   esm: {
     libraryTarget: 'module',
     path: `${__dirname}/dist`,
-    filename: "index.js",
+    filename: "[name].js",
   },
   umd: {
     library: "wave-oscillator",
@@ -19,7 +19,10 @@ module.exports = (env,argv)=>({
     // development に設定するとソースマップ有効でJSファイルが出力される
     mode: 'development',
     // メインとなるJavaScriptファイル（エントリーポイント）
-    entry: './js/index.js',
+    entry: {
+      oscillator:'./js/src/index.js',
+      test:"./js/test/test.js",
+    },
     experiments: {
     	outputModule: true,
     },
@@ -50,6 +53,6 @@ module.exports = (env,argv)=>({
     },
     
   plugins: [
-    new IgnoreDynamicRequire()
+    //new IgnoreDynamicRequire()
   ],
 });

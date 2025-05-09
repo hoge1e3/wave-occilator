@@ -30,4 +30,5 @@ export async function playSound() {
         sources.push(src);
     }
     playback=joinSource(...sources).play(audioCtx);
+    playback.promise.then((e)=>console.log("Play end"),(e)=>console.log("Play Stopped"));
 }
