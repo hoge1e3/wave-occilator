@@ -21,11 +21,16 @@
   },
   "scripts": {
     "tsc": "npx tsc",
-    "webpack": "echo no-webpack",
-    "webpack-dev": "echo no-webpack",
+    "webpack-dev": "npx webpack --mode=development",
+    "webpack": "npx webpack --mode=production",
+    "build": "npx tsc && npx webpack",
+    "build-dev": "npx tsc && npm run webpack-dev",
     "test": "npx http-server -o js/test/index.html"
   },
   "devDependencies": {
     "typescript": "^5.8.3"
+  },
+  "dependencies": {
+    "mutable-promise": "^1.1.15"
   }
 }

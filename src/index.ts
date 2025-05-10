@@ -1,3 +1,4 @@
+import MutablePromise from "mutable-promise";
 export type ADSR = {
     attack: number; // time in seconds to reach max volume
     decay: number; // time in seconds to reach sustain level
@@ -10,6 +11,44 @@ export interface Source {
     duration: number;
     play(ctx:AudioContext, start?:number, dest?: AudioDestinationNode ):Playback;
 }
+function resolveAfter(p:MutablePromise<void>, afterInSec:number) {
+    if (afterInSec<0) afterInSec=0;
+    setTimeout(()=>p.resolve(), afterInSec*1000);
+}
+/*export type PlaybackEvent=Event;
+export class PlaybackEventTarget extends EventTarget {
+    state="playing" as "playing"|"stop"|"end";
+    constructor(duration:number) {
+        super();
+        if (duration>0) {
+            const timeout=setTimeout(()=>this.dispatchEnd(), duration*1000);
+            this.addEventListener("stop",()=>clearTimeout(timeout));
+        } else {
+            this.dispatchEnd()
+        }
+    }
+    dispatchEnd(){
+        if (this.state!=="playing") return;
+        this.state="end";
+        this.dispatchEvent(new Event("end"));
+    }
+    dispatchStop(){
+        if (this.state!=="playing") return;
+        this.state="stop";
+        this.dispatchEvent(new Event("stop"));
+    }
+}*/
+export interface Playback {
+    ctx:AudioContext;
+    dest: AudioDestinationNode;
+    stop():void;
+    start:number;
+    end:number; // TODO: end time may be decided later.
+    promise: Promise<void>;
+    /*addEventListener(type: "stop"|"end", handler:(e:PlaybackEvent)=>any):void;
+    removeEventListener(type: "stop"|"end", handler:(e:PlaybackEvent)=>any):void;
+    dispatchEvent(e:PlaybackEvent):void;*/
+}
 export function gainNodeOfEnvelope(audioCtx: AudioContext, time:number, duration:number, vol:number, envelope: ADSR) {
     const gainNode = audioCtx.createGain();
     const attackEnd = time + envelope.attack;
@@ -21,6 +60,48 @@ export function gainNodeOfEnvelope(audioCtx: AudioContext, time:number, duration
     gainNode.gain.linearRampToValueAtTime(0, time + duration); // Release phase
     return gainNode;
 }
+export function parallelSource(...sources:Source[]):Source {
+    const duration=Math.max(...sources.map(s=>s.duration));
+    return {
+        duration,
+        play(ctx:AudioContext, start:number=ctx.currentTime, dest=ctx.destination ) {
+            const end=start+duration;
+            const playbacks=sources.map((s)=>s.play(ctx,start,dest));
+            let playc=0;;
+            /*for (let p of playbacks) {
+                p.addEventListener("stop", ()=>{
+                    playc--;
+                    if (playc==0) events.dispatchStop();
+                });
+                playc++;
+            }*/
+            //const events=new PlaybackEventTarget(end-ctx.currentTime);
+            const promise=new MutablePromise<void>();
+            function stopAll() {
+                for (let p of playbacks) p.stop();
+            }
+            Promise.all(playbacks.map(p=>p.promise)).then(r=>promise.resolve(), stopAll);
+            //resolveAfter(promise, end-ctx.currentTime);
+            return {
+                ctx ,dest, start, end,
+                stop() {
+                    for (let p of playbacks) p.stop();
+                    return promise.reject("stopped");
+                },
+                promise,
+                /*addEventListener: events.addEventListener.bind(events),
+                removeEventListener: events.removeEventListener.bind(events),
+                dispatchEvent: events.dispatchEvent.bind(events),*/
+            }
+        }
+    };
+}
+export function joinPlaybackAndSource(playback:Playback, source:Source):Playback {
+    const npb=source.play(playback.ctx, playback.end, playback.dest);
+    playback.promise.catch(()=>npb.stop());
+    npb.promise.catch(()=>playback.stop());
+    return npb;
+}
 export function joinSource(...sources:Source[]):Source {
     const duration=sources.reduce((prev, cur)=>prev+cur.duration ,0);
     return {
@@ -31,33 +112,47 @@ export function joinSource(...sources:Source[]):Source {
                 ...pbs, 
                 src.play(ctx, pbs[pbs.length-1]?.end||start, dest)
             ],  [] as Playback[]);
+            /*const events=new PlaybackEventTarget(end-ctx.currentTime);
+            for (let i=1; i<playbacks.length;i++) {
+                playbacks[i-1].addEventListener("stop",()=>playbacks[i].stop());
+            }*/
+            function stopAll() {
+                for (let p of playbacks) p.stop();
+            }
+            const promise=new MutablePromise<void>();
+            Promise.all(playbacks.map(p=>p.promise)).then(r=>promise.resolve(), stopAll);
+            //resolveAfter(promise, end-ctx.currentTime);
+
             return {
                 ctx ,dest, start, end,
-                stop() {
-                    for (let p of playbacks) p.stop();
+                stop(){
+                    stopAll();
+                    return promise.reject("stopped");
                 },
-                join(src:Source):Playback {
-                    return src.play(ctx,end,dest);
-                }
+                promise,
+                /*addEventListener: events.addEventListener.bind(events),
+                removeEventListener: events.removeEventListener.bind(events),
+                dispatchEvent: events.dispatchEvent.bind(events),*/
             }
         }
     }
-}
-export interface Playback {
-    ctx:AudioContext;
-    dest: AudioDestinationNode;
-    stop():void;
-    start:number;
-    end:number; // end time may be decided later.
-    //join(src:Source):Playback;
 }
 export function createMuteNote(duration: number):Source {
     return {
         duration,
         play(ctx, start=ctx.currentTime , dest=ctx.destination) {
+            const end=start+duration;           
+            //const events=new PlaybackEventTarget(end-ctx.currentTime);
+            const promise=new MutablePromise<void>();
+            resolveAfter(promise, end-ctx.currentTime);
+            //Promise.all(playbacks.map(p=>p.promise)).then(r=>promise.resolve(), e=>promise.reject(e));
             return {
-                ctx, dest, start, end: start+duration,
-                stop(){}, 
+                ctx, dest, start, end,
+                stop(){return promise.reject("stopped");/*events.dispatchStop();*/}, 
+                promise,
+                /*addEventListener: events.addEventListener.bind(events),
+                removeEventListener: events.removeEventListener.bind(events),
+                dispatchEvent: events.dispatchEvent.bind(events),*/
             };
         }
     }
@@ -81,15 +176,24 @@ export function createOscillatorNote(duration:number, freq:number, vol:number, w
                 
             oscillator.connect(gainNode);
             gainNode.connect(dest);
-            const end=start + duration
+            const end=start + duration;
+            //const events=new PlaybackEventTarget(end-ctx.currentTime);
+            const promise=new MutablePromise<void>();
+            resolveAfter(promise, end-ctx.currentTime);
             oscillator.start(start);
             oscillator.stop(end);
             return {
                 gainNode, oscillator,
                 ctx ,dest, start, end,
                 stop() {
-                    gainNode.disconnect()
+                    gainNode.disconnect();
+                    return promise.reject("stopped");
+                    //events.dispatchStop();
                 },
+                promise,
+                /*addEventListener: events.addEventListener.bind(events),
+                removeEventListener: events.removeEventListener.bind(events),
+                dispatchEvent: events.dispatchEvent.bind(events),*/
             }
         }
     };
@@ -152,12 +256,20 @@ export function createBufferedWaveformNote(duration:number, freq:number, vol:num
             const end=start + duration
             oscillator.start(start);
             oscillator.stop(end);
+            //const events=new PlaybackEventTarget(end-ctx.currentTime);
+            const promise=new MutablePromise<void>();
+            resolveAfter(promise, end-ctx.currentTime);
             return {
                 gainNode, oscillator,
                 ctx ,dest, start, end,
                 stop() {
-                    gainNode.disconnect()
+                    gainNode.disconnect();
+                    return promise.reject("stopped");
                 },
+                promise,
+                /*addEventListener: events.addEventListener.bind(events),
+                removeEventListener: events.removeEventListener.bind(events),
+                dispatchEvent: events.dispatchEvent.bind(events),*/
             }
         }
     };
