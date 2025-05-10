@@ -99,11 +99,12 @@ export function createOscillatorNote(duration:number, freq:number, vol:number, w
 export type BufferedWaveform={
     buf: AudioBuffer,
     baseFreq: number,
+    loop: boolean,
 };
 type FreqParam=FromRecorded|FromGenerated;
 type FromRecorded={ sampleRate: number, baseFreq: number};
 type FromGenerated={ lambda: number };
-export function bufferedWaveform(ctx:AudioContext, array:number[], freqParam:FreqParam={lambda:array.length}):BufferedWaveform {
+export function bufferedWaveform(ctx:AudioContext, array:number[], freqParam:FreqParam={lambda:array.length}, loop=false):BufferedWaveform {
     // From sampled(Recorded) data
     //  given: sampleRate, baseFreq 
     //  calculate: lambda = sampleRate / baseFreq
@@ -126,12 +127,12 @@ export function bufferedWaveform(ctx:AudioContext, array:number[], freqParam:Fre
         dstArray[i]=array[i]-avr;
     }
     return {
-        buf, baseFreq, 
+        buf, baseFreq, loop,
     };
 }
-export async function bufferedWaveformOfFile(ctx:AudioContext, arrayBuffer:ArrayBuffer, baseFreq=440):Promise<BufferedWaveform> {
+export async function bufferedWaveformOfFile(ctx:AudioContext, arrayBuffer:ArrayBuffer, baseFreq=440, loop=false):Promise<BufferedWaveform> {
     const { sampleRate, data } = await parseAudioFile(ctx, arrayBuffer);
-    return bufferedWaveform(ctx, Array.from(data), { baseFreq, sampleRate });
+    return bufferedWaveform(ctx, Array.from(data), { baseFreq, sampleRate }, loop);
 }
 export function playbackRateOf(waveform:BufferedWaveform, freq: number) {
     return freq/waveform.baseFreq;
@@ -143,7 +144,7 @@ export function createBufferedWaveformNote(duration:number, freq:number, vol:num
             const oscillator = ctx.createBufferSource();
             oscillator.buffer=waveform.buf;
             oscillator.playbackRate.setValueAtTime( playbackRateOf(waveform, freq) , start);
-            oscillator.loop=true;
+            oscillator.loop=waveform.loop;
             const gainNode = gainNodeOfEnvelope(ctx, start, duration, vol, envelope);
 
             oscillator.connect(gainNode);
